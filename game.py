@@ -1,16 +1,26 @@
 import tkinter as tk
-import random
+from decimal import Decimal, ROUND_HALF_UP
+import warnings
+warnings.simplefilter('ignore')
 
 class Game(tk.Frame):
 	def __init__(self, master):
-		self.WIDTH = 640
+		self.WIDTH = 800
 		self.HEIGHT = 700
 		self.bgcolor = 'forestgreen'
 		tk.Frame.__init__(self, master, width = self.WIDTH, height = self.HEIGHT, bg = self.bgcolor)
 		self.pack()
 		self.pack_propagate(0)
 
-		tk.Label(self, text = str(random.randint(0,10))).pack()
+		self.reduction_ratio = 9  #縮小率
+		self.imagewidth = int(Decimal(str(712 / self.reduction_ratio)).quantize(Decimal('0'), rounding=ROUND_HALF_UP))
+		self.imageheight = int(Decimal(str(1008 / self.reduction_ratio)).quantize(Decimal('0'), rounding=ROUND_HALF_UP))
+
+		# 52枚のカードを生成
+		import deck
+		self.deckobj = deck.Deck(self.imagewidth, self.imageheight)
+		self.deckobj.shuffleCards()
+		self.deckcards = self.deckobj.getCards()
 
 		tk.Button(self, text = '最初から', command = self.btnClicked).pack()
 
