@@ -43,14 +43,9 @@ class Game(tk.Frame):
 	def mousePressed(self, event):
 		tag = event.widget.gettags('current')[0]
 
-		if tag in ['restartrect', 'restart']:
-			self.destroy()
-			game = Game(master = root)
-
-		else:
-			self.highlighttags.clear()
-			self.getCardsWithTags(tag)
-			self.repaint()
+		self.highlighttags.clear()
+		self.getCardsWithTags(tag)
+		self.repaint()
 
 	def getCardsWithTags(self, tag):
 		# カラムデッキを検索
@@ -67,10 +62,14 @@ class Game(tk.Frame):
 		self.canvas.delete('all')
 		self.paint()
 
+	def btnClicked(self):
+		self.destroy()
+		game = Game(master = root)
+
 	def paint(self):
 		# 最初からボタン
-		self.canvas.create_rectangle(10, self.HEIGHT - 40, 100, self.HEIGHT - 10, fill = 'chocolate', outline = 'white', width = 1, tags = 'restartrect')
-		self.canvas.create_text(55, self.HEIGHT - 25, fill = 'black', text = '最初から', font = ('Arial', 16), tags = 'restart')
+		restartbtn = tk.Button(self, text = '最初から', command = self.btnClicked, cursor = 'hand2', bg = self.bgcolor, highlightbackground = self.bgcolor)
+		self.canvas.create_window(10, self.HEIGHT - 40, window = restartbtn, anchor='nw')
 
 		# カラムデッキの描画
 		for i in range(len(self.columndecks)):
