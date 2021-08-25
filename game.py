@@ -35,7 +35,7 @@ class Game(tk.Frame):
 				self.columndecks[i].addCard(self.deckcards[0])
 				self.deckcards.pop(0)
 
-		self.canvas = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT, bg = self.bgcolor)
+		self.canvas = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT, bg = self.bgcolor, bd = 0, highlightthickness = 0)
 		self.canvas.pack()
 
 		self.paint()
