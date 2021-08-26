@@ -29,11 +29,26 @@ class Game(tk.Frame):
 		import columnDeck
 		self.columndecks = []
 		for i in range(7):
-			obj = columnDeck.ColumnDeck(i * self.imagewidth + (i + 1) * 30, self.imageheight * 1.5, self.imagewidth, self.imageheight)
+			obj = columnDeck.ColumnDeck(i * self.imagewidth + (i + 1) * 30, self.imageheight * 1.5, i)
 			self.columndecks.append(obj)
 			for j in range(i + 1):
 				self.columndecks[i].addCard(self.deckcards[0])
 				self.deckcards.pop(0)
+
+		# スーツデッキのインスタンス生成
+		import suitDeck
+		self.suitdecks = []
+		i = 3
+		for j in range(4):
+			obj = suitDeck.SuitDeck(self.columndecks[i].getX(), 30, j)
+			self.suitdecks.append(obj)
+			i += 1
+
+		self.BLANK = 0
+		self.COLUMNDECK = 1
+		self.SUITDECK = 2
+		self.pressdeck = self.BLANK
+		self.pressindex = -1
 
 		self.canvas = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT, bg = self.bgcolor, bd = 0, highlightthickness = 0)
 		self.canvas.pack()
@@ -43,20 +58,78 @@ class Game(tk.Frame):
 	def mousePressed(self, event):
 		tag = event.widget.gettags('current')[0]
 
-		self.highlighttags.clear()
-		self.getCardsWithTags(tag)
+		if len(self.tempcards) == 0:
+			# 1回目の選択
+			self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
+			for card in self.tempcards:
+				self.highlighttags.append(card.getTags())
+
+
+		else:
+			# 2回目の選択
+			tempcards, pressindex, pressdeck = self.getCardsInfosWithTags(tag)
+			if pressdeck == self.COLUMNDECK:
+				if self.tempcards[0].getColor() != tempcards[-1].getColor():
+					if self.tempcards[0].getNum() + 1 == tempcards[-1].getNum():
+						for i in range(len(self.columndecks)):
+							self.columndecks[i].deleteCards(self.highlighttags)
+						for i in range(len(self.suitdecks)):
+							self.suitdecks[i].deleteCards(self.highlighttags)
+						self.columndecks[pressindex].addCards(self.tempcards)
+
+			elif pressdeck == self.SUITDECK:
+				if len(self.tempcards) == 1 and len(tempcards) == 1:
+					if self.tempcards[0].getSuit() == tempcards[0].getSuit():
+						if self.tempcards[0].getNum() == tempcards[0].getNum() + 1:
+							for i in range(len(self.columndecks)):
+								self.columndecks[i].deleteCards(self.highlighttags)
+							for i in range(len(self.suitdecks)):
+								self.suitdecks[i].deleteCards(self.highlighttags)
+							self.suitdecks[pressindex].addCards(self.tempcards)
+
+			elif pressdeck == self.BLANK and 'suit' in tag:
+				if len(self.tempcards) == 1:
+					if self.tempcards[0].getNum() == 1:
+						for i in range(len(self.columndecks)):
+								self.columndecks[i].deleteCards(self.highlighttags)
+						for i in range(len(self.suitdecks)):
+							self.suitdecks[i].deleteCards(self.highlighttags)
+
+						index = int(tag.replace('suit', ''))
+						self.suitdecks[index].addCards(self.tempcards)
+
+			elif pressdeck == self.BLANK and 'column' in tag:
+				index = int(tag.replace('column', ''))
+				if self.tempcards[0].getNum() == 13:
+					for i in range(len(self.columndecks)):
+							self.columndecks[i].deleteCards(self.highlighttags)
+					for i in range(len(self.suitdecks)):
+						self.suitdecks[i].deleteCards(self.highlighttags)
+					self.columndecks[index].addCards(self.tempcards)
+
+			self.highlighttags = self.tempcards = []
+
 		self.repaint()
 
-	def getCardsWithTags(self, tag):
+	def getCardsInfosWithTags(self, tag):
+		cards = []
 		# カラムデッキを検索
 		for i in range(len(self.columndecks)):
 			for j in range(len(self.columndecks[i].getCards())):
 				if self.columndecks[i].getCards()[j].getTags() == tag:
 					while j < len(self.columndecks[i].getCards()):
-						self.highlighttags.append(self.columndecks[i].getCards()[j].getTags())
-						self.tempcards.append(self.columndecks[i].getCards()[j])
+						cards.append(self.columndecks[i].getCards()[j])
 						j += 1
-					break
+					return cards, i, self.COLUMNDECK
+
+		# スーツデッキを検索
+		for i in range(len(self.suitdecks)):
+			if len(self.suitdecks[i].getCards()) > 0:
+				if self.suitdecks[i].getCards()[-1].getTags() == tag:
+					cards.append(self.suitdecks[i].getCards()[-1])
+					return cards, i, self.SUITDECK
+
+		return [], -1, self.BLANK
 
 	def repaint(self, event = None):
 		self.canvas.delete('all')
@@ -73,7 +146,11 @@ class Game(tk.Frame):
 
 		# カラムデッキの描画
 		for i in range(len(self.columndecks)):
-			self.columndecks[i].paint(self.canvas, self.highlighttags)
+			self.columndecks[i].paint(self.canvas, self.highlighttags, self.imagewidth, self.imageheight, self.bgcolor)
+
+		# スーツデッキの描画
+		for i in range(len(self.suitdecks)):
+			self.suitdecks[i].paint(self.canvas, self.highlighttags, self.imagewidth, self.imageheight, self.bgcolor)
 
 		# マウスイベント
 		self.canvas.tag_bind('current', '<ButtonPress-1>', self.mousePressed)
