@@ -7,7 +7,7 @@ warnings.simplefilter('ignore')
 class Game(tk.Frame):
 	def __init__(self, master):
 		self.WIDTH = 800
-		self.HEIGHT = 700
+		self.HEIGHT = 600
 		self.bgcolor = 'forestgreen'
 		tk.Frame.__init__(self, master, width = self.WIDTH, height = self.HEIGHT)
 		self.pack()
@@ -80,17 +80,27 @@ class Game(tk.Frame):
 			# 2回目の選択
 			tempcards, pressindex, pressdeck = self.getCardsInfosWithTags(tag)
 			if pressdeck == self.COLUMNDECK:
-				if self.tempcards[0].getColor() != tempcards[-1].getColor():
-					if self.tempcards[0].getNum() + 1 == tempcards[-1].getNum():
-						self.deleteCards(self.highlighttags)
-						self.columndecks[pressindex].addCards(self.tempcards)
+				if self.tempcards[0].getColor() != tempcards[-1].getColor() and self.tempcards[0].getNum() + 1 == tempcards[-1].getNum():
+					self.deleteCards(self.highlighttags)
+					self.columndecks[pressindex].addCards(self.tempcards)
+					self.highlighttags = self.tempcards = []
+				else:
+					self.highlighttags = self.tempcards = []
+					self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
+					for card in self.tempcards:
+						self.highlighttags.append(card.getTags())
 
 			elif pressdeck == self.SUITDECK:
 				if len(self.tempcards) == 1 and len(tempcards) == 1:
-					if self.tempcards[0].getSuit() == tempcards[0].getSuit():
-						if self.tempcards[0].getNum() == tempcards[0].getNum() + 1:
-							self.deleteCards(self.highlighttags)
-							self.suitdecks[pressindex].addCards(self.tempcards)
+					if self.tempcards[0].getSuit() == tempcards[0].getSuit() and self.tempcards[0].getNum() == tempcards[0].getNum() + 1:
+						self.deleteCards(self.highlighttags)
+						self.suitdecks[pressindex].addCards(self.tempcards)
+						self.highlighttags = self.tempcards = []
+					else:
+						self.highlighttags = self.tempcards = []
+						self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
+						for card in self.tempcards:
+							self.highlighttags.append(card.getTags())
 
 			elif pressdeck == self.BLANK and 'suit' in tag:
 				if len(self.tempcards) == 1:
@@ -99,14 +109,14 @@ class Game(tk.Frame):
 
 						index = int(tag.replace('suit', ''))
 						self.suitdecks[index].addCards(self.tempcards)
+						self.highlighttags = self.tempcards = []
 
 			elif pressdeck == self.BLANK and 'column' in tag:
 				index = int(tag.replace('column', ''))
 				if self.tempcards[0].getNum() == 13:
 					self.deleteCards(self.highlighttags)
 					self.columndecks[index].addCards(self.tempcards)
-
-			self.highlighttags = self.tempcards = []
+					self.highlighttags = self.tempcards = []
 
 		self.repaint()
 		if self.gameComplete() == True:
