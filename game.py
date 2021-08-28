@@ -7,7 +7,7 @@ warnings.simplefilter('ignore')
 class Game(tk.Frame):
 	def __init__(self, master):
 		self.WIDTH = 800
-		self.HEIGHT = 600
+		self.HEIGHT = 560
 		self.bgcolor = 'forestgreen'
 		tk.Frame.__init__(self, master, width = self.WIDTH, height = self.HEIGHT)
 		self.pack()
@@ -64,6 +64,11 @@ class Game(tk.Frame):
 	def mousePressed(self, event):
 		tag = event.widget.gettags('current')[0]
 
+		if tag in ['restart', 'restartarrow', 'restartoval']:
+			self.destroy()
+			game = Game(master = root)
+			return
+
 		if tag == 'handcards':
 			self.highlighttags = self.tempcards = []
 			self.deckobj.drawCard()
@@ -118,9 +123,22 @@ class Game(tk.Frame):
 					self.columndecks[index].addCards(self.tempcards)
 					self.highlighttags = self.tempcards = []
 
+			elif pressdeck == self.HANDDECK:
+				self.highlighttags = self.tempcards = []
+				self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
+				for card in self.tempcards:
+					self.highlighttags.append(card.getTags())
+
 		self.repaint()
 		if self.gameComplete() == True:
 			messagebox.showinfo('メッセージ', '成功です。')
+
+	def mouseEnter(self, event):
+		tag = event.widget.gettags('current')[0]
+
+		if tag in ['restart', 'restartarrow', 'restartoval']:
+			event.widget.itemconfig('restartarrow', fill = 'black')
+			event.widget.itemconfig('restartoval', outline = 'black')
 
 	def getCardsInfosWithTags(self, tag):
 		cards = []
@@ -169,14 +187,13 @@ class Game(tk.Frame):
 		self.canvas.delete('all')
 		self.paint()
 
-	def btnClicked(self):
-		self.destroy()
-		game = Game(master = root)
-
 	def paint(self):
 		# 最初からボタン
-		restartbtn = tk.Button(self, text = '最初から', command = self.btnClicked, cursor = 'hand2', bg = self.bgcolor, highlightbackground = self.bgcolor)
-		self.canvas.create_window(10, self.HEIGHT - 40, window = restartbtn, anchor='nw')
+		self.canvas.create_oval(10, self.HEIGHT - 60, 60, self.HEIGHT - 10, fill = 'red', tags = 'restart')
+		self.canvas.create_oval(22, self.HEIGHT - 46, 48, self.HEIGHT - 20, fill = 'red', outline = 'white', width = 3, tags = 'restartoval')
+		self.canvas.create_rectangle(42, self.HEIGHT - 52, 52, self.HEIGHT - 32, fill = 'red', width = 0, tags = 'restart')
+		self.canvas.create_line(34, self.HEIGHT - 52, 42, self.HEIGHT - 45, fill = 'white', width = 3, tags = 'restartarrow')
+		self.canvas.create_line(34, self.HEIGHT - 39, 42, self.HEIGHT - 46, fill = 'white', width = 3, tags = 'restartarrow')
 
 		# 手札の描画
 		self.deckobj.paint(self.canvas, self.bgcolor, self.highlighttags)
@@ -191,6 +208,8 @@ class Game(tk.Frame):
 
 		# マウスイベント
 		self.canvas.tag_bind('current', '<ButtonPress-1>', self.mousePressed)
+		self.canvas.tag_bind('current', '<Enter>', self.mouseEnter)
+		self.canvas.tag_bind('current', '<Leave>', self.repaint)
 
 if __name__ == '__main__':
 	root = tk.Tk()
