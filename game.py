@@ -133,6 +133,39 @@ class Game(tk.Frame):
 		if self.gameComplete() == True:
 			messagebox.showinfo('メッセージ', '成功です。')
 
+	def doubleClicked(self, event):
+		tag = event.widget.gettags('current')[0]
+
+		self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
+		for card in self.tempcards:
+			self.highlighttags.append(card.getTags())
+
+		if len(self.tempcards) == 0:
+			return
+
+		if self.tempcards[0].getNum() == 1:
+			for index in range(len(self.suitdecks)):
+				if len(self.suitdecks[index].getCards()) == 0:
+					break
+			if index < len(self.suitdecks):
+				self.deleteCards(self.highlighttags)
+				self.suitdecks[index].addCards(self.tempcards)
+				self.highlighttags = self.tempcards = []
+		else:
+			for index in range(len(self.suitdecks)):
+				if len(self.suitdecks[index].getCards()) > 0:
+					if self.suitdecks[index].getCards()[0].getSuit() == self.tempcards[0].getSuit():
+						break
+			if index < len(self.suitdecks):
+				if self.tempcards[0].getSuit() == self.suitdecks[index].getCards()[-1].getSuit() and self.tempcards[0].getNum() == self.suitdecks[index].getCards()[-1].getNum() + 1:
+					self.deleteCards(self.highlighttags)
+					self.suitdecks[index].addCards(self.tempcards)
+					self.highlighttags = self.tempcards = []
+
+		self.repaint()
+		if self.gameComplete() == True:
+			messagebox.showinfo('メッセージ', '成功です。')
+
 	def mouseEnter(self, event):
 		tag = event.widget.gettags('current')[0]
 
@@ -208,6 +241,7 @@ class Game(tk.Frame):
 
 		# マウスイベント
 		self.canvas.tag_bind('current', '<ButtonPress-1>', self.mousePressed)
+		self.canvas.tag_bind('current', '<Double-1>', self.doubleClicked)
 		self.canvas.tag_bind('current', '<Enter>', self.mouseEnter)
 		self.canvas.tag_bind('current', '<Leave>', self.repaint)
 
