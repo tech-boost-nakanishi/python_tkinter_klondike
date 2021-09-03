@@ -7,12 +7,16 @@ class SuitDeck():
 		self.x = x
 		self.y = y
 		self.index = index
+		self.padding = 8
 
 	def getX(self):
 		return self.x
 
 	def getY(self):
 		return self.y
+
+	def getPadding(self):
+		return self.padding
 
 	def addCard(self, card):
 		self.cards.append(card)
@@ -36,8 +40,7 @@ class SuitDeck():
 
 	def paint(self, canvas, highlighttags, imagewidth, imageheight, bgcolor):
 		# スーツデッキの白枠表示
-		diff = 8
-		canvas.create_rectangle(self.x - diff, self.y - diff, self.x + imagewidth + diff, self.y + imageheight + diff, outline = 'white', fill = bgcolor, width = 2, tags = 'suit' + str(self.index))
+		canvas.create_rectangle(self.x - self.padding, self.y - self.padding, self.x + imagewidth + self.padding, self.y + imageheight + self.padding, outline = 'white', fill = bgcolor, width = 2, tags = 'suit' + str(self.index))
 
 		# カードの表示
 		if len(self.cards) > 0:

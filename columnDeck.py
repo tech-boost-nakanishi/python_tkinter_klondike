@@ -7,6 +7,7 @@ class ColumnDeck():
 		self.x = x
 		self.y = y
 		self.index = index
+		self.shiftX = 15
 
 	def getX(self):
 		return self.x
@@ -16,6 +17,9 @@ class ColumnDeck():
 
 	def getCards(self):
 		return self.cards
+
+	def getShiftX(self):
+		return self.shiftX
 
 	def addCard(self, card):
 		self.cards.append(card)
@@ -50,7 +54,7 @@ class ColumnDeck():
 					cy += 5
 
 				elif self.cards[i - 1].getState() == 1:
-					cy += 15
+					cy += self.shiftX
 
 			if self.cards[i].getState() == 0:
 				canvas.create_rectangle(self.x, cy, self.x + imagewidth, cy + imageheight, fill = 'firebrick', outline = 'black', width = 1)

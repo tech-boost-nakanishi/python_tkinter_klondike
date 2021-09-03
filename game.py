@@ -1,6 +1,8 @@
 import tkinter as tk
 from decimal import Decimal, ROUND_HALF_UP
 from tkinter import messagebox
+import threading
+import time
 import warnings
 warnings.simplefilter('ignore')
 
@@ -19,6 +21,8 @@ class Game(tk.Frame):
 
 		self.highlighttags = []	# 選択中のタグを格納
 		self.tempcards = []		# 選択中のカードを格納
+		self.isCardMove = False
+		self.isDoubleClicked = False
 
 		# 52枚のカードを生成
 		import deck
@@ -71,6 +75,7 @@ class Game(tk.Frame):
 
 		if tag == 'handcards':
 			self.highlighttags = self.tempcards = []
+			self.isCardMove = self.isDoubleClicked = False
 			self.deckobj.drawCard()
 			self.repaint()
 			return
@@ -86,9 +91,8 @@ class Game(tk.Frame):
 			tempcards, pressindex, pressdeck = self.getCardsInfosWithTags(tag)
 			if pressdeck == self.COLUMNDECK:
 				if self.tempcards[0].getColor() != tempcards[-1].getColor() and self.tempcards[0].getNum() + 1 == tempcards[-1].getNum():
-					self.deleteCards(self.highlighttags)
-					self.columndecks[pressindex].addCards(self.tempcards)
-					self.highlighttags = self.tempcards = []
+					self.isCardMove = True
+					self.startCardAnimThread(tag, tempcards, pressindex, pressdeck, self.canvas.coords(self.highlighttags[0]))
 				else:
 					self.highlighttags = self.tempcards = []
 					self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
@@ -98,9 +102,8 @@ class Game(tk.Frame):
 			elif pressdeck == self.SUITDECK:
 				if len(self.tempcards) == 1 and len(tempcards) == 1:
 					if self.tempcards[0].getSuit() == tempcards[0].getSuit() and self.tempcards[0].getNum() == tempcards[0].getNum() + 1:
-						self.deleteCards(self.highlighttags)
-						self.suitdecks[pressindex].addCards(self.tempcards)
-						self.highlighttags = self.tempcards = []
+						self.isCardMove = True
+						self.startCardAnimThread(tag, tempcards, pressindex, pressdeck, self.canvas.coords(self.highlighttags[0]))
 					else:
 						self.highlighttags = self.tempcards = []
 						self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
@@ -110,18 +113,15 @@ class Game(tk.Frame):
 			elif pressdeck == self.BLANK and 'suit' in tag:
 				if len(self.tempcards) == 1:
 					if self.tempcards[0].getNum() == 1:
-						self.deleteCards(self.highlighttags)
-
 						index = int(tag.replace('suit', ''))
-						self.suitdecks[index].addCards(self.tempcards)
-						self.highlighttags = self.tempcards = []
+						self.isCardMove = True
+						self.startCardAnimThread(tag, tempcards, index, pressdeck, self.canvas.coords(self.highlighttags[0]))
 
 			elif pressdeck == self.BLANK and 'column' in tag:
 				index = int(tag.replace('column', ''))
 				if self.tempcards[0].getNum() == 13:
-					self.deleteCards(self.highlighttags)
-					self.columndecks[index].addCards(self.tempcards)
-					self.highlighttags = self.tempcards = []
+					self.isCardMove = True
+					self.startCardAnimThread(tag, tempcards, index, pressdeck, self.canvas.coords(self.highlighttags[0]))
 
 			elif pressdeck == self.HANDDECK:
 				self.highlighttags = self.tempcards = []
@@ -130,10 +130,9 @@ class Game(tk.Frame):
 					self.highlighttags.append(card.getTags())
 
 		self.repaint()
-		if self.gameComplete() == True:
-			messagebox.showinfo('メッセージ', '成功です。')
 
 	def doubleClicked(self, event):
+		self.isDoubleClicked = True
 		tag = event.widget.gettags('current')[0]
 
 		self.tempcards, self.pressindex, self.pressdeck = self.getCardsInfosWithTags(tag)
@@ -148,9 +147,8 @@ class Game(tk.Frame):
 				if len(self.suitdecks[index].getCards()) == 0:
 					break
 			if index < len(self.suitdecks):
-				self.deleteCards(self.highlighttags)
-				self.suitdecks[index].addCards(self.tempcards)
-				self.highlighttags = self.tempcards = []
+				self.isCardMove = True
+				self.startCardAnimThread(tag, self.tempcards, index, self.pressdeck, self.canvas.coords(self.highlighttags[0]))
 		else:
 			for index in range(len(self.suitdecks)):
 				if len(self.suitdecks[index].getCards()) > 0:
@@ -158,13 +156,10 @@ class Game(tk.Frame):
 						break
 			if index < len(self.suitdecks):
 				if self.tempcards[0].getSuit() == self.suitdecks[index].getCards()[-1].getSuit() and self.tempcards[0].getNum() == self.suitdecks[index].getCards()[-1].getNum() + 1:
-					self.deleteCards(self.highlighttags)
-					self.suitdecks[index].addCards(self.tempcards)
-					self.highlighttags = self.tempcards = []
+					self.isCardMove = True
+					self.startCardAnimThread(tag, self.tempcards, index, self.pressdeck, self.canvas.coords(self.highlighttags[0]))
 
 		self.repaint()
-		if self.gameComplete() == True:
-			messagebox.showinfo('メッセージ', '成功です。')
 
 	def mouseEnter(self, event):
 		tag = event.widget.gettags('current')[0]
@@ -172,6 +167,71 @@ class Game(tk.Frame):
 		if tag in ['restart', 'restartarrow', 'restartoval']:
 			event.widget.itemconfig('restartarrow', fill = 'black')
 			event.widget.itemconfig('restartoval', outline = 'black')
+
+	def startCardAnimThread(self, tag, tempcards, pressindex, pressdeck, start):
+		temppositions = []
+		for i in range(len(self.highlighttags)):
+			temppositions.append(self.canvas.coords(self.highlighttags[i]))
+
+		cardanimthread = threading.Thread(target=self.addCardAnim, args=(tag, tempcards, pressindex, pressdeck, start, temppositions,))
+		cardanimthread.setDaemon(True)
+
+		if self.isCardMove == True and cardanimthread.is_alive() == False:
+			cardanimthread.start()
+
+	def addCardAnim(self, tag, tempcards, pressindex, pressdeck, start, temppositions):
+		self.deleteCards(self.highlighttags)
+		for i in range(len(self.tempcards)):
+			self.canvas.create_image(temppositions[i][0], temppositions[i][1], image = self.tempcards[i].getImage(), anchor = tk.NW, tags = self.tempcards[i].getTags())
+		splitcount = 3
+		if self.tempcards[0].getNum() == 1 and len(self.tempcards) == 1 and 'suit' in tag:
+			goal = self.canvas.coords(tag)
+			goal[0] += self.suitdecks[0].getPadding()
+		elif self.tempcards[0].getNum() == 13 and 'column' in tag:
+			goal = self.canvas.coords(tag)
+		else:
+			goal = self.canvas.coords(tempcards[0].getTags())
+		if self.isDoubleClicked == True:
+			start = self.canvas.coords(tempcards[0].getTags())
+			if len(self.suitdecks[pressindex].getCards()) > 0:
+				goal = self.canvas.coords(self.suitdecks[pressindex].getCards()[-1].getTags())
+			else:
+				goal = self.canvas.coords('suit' + str(pressindex))
+				if self.pressdeck == self.COLUMNDECK:
+					goal[1] -= self.suitdecks[0].getPadding() * 2
+				elif self.pressdeck == self.BLANK:
+					goal[0] -= self.suitdecks[0].getPadding()
+					goal[1] -= self.suitdecks[0].getPadding()
+		mx = (goal[0] - start[0]) / splitcount
+		my = (goal[1] - start[1]) / splitcount
+		if pressdeck == self.COLUMNDECK:
+			my += self.columndecks[0].getShiftX() / splitcount
+		elif pressdeck == self.SUITDECK or 'suit' in tag:
+			my += self.suitdecks[0].getPadding() / splitcount
+		if self.isDoubleClicked == True and len(self.suitdecks[pressindex].getCards()) == 0:
+			mx += self.suitdecks[0].getPadding() / splitcount
+			my += self.suitdecks[0].getPadding() / splitcount
+		for i in range(splitcount):
+			for j in range(len(self.tempcards)):
+				self.canvas.move(self.tempcards[j].getTags(), mx, my)
+			time.sleep(0.05)
+
+		if self.isDoubleClicked == True:
+			self.suitdecks[pressindex].addCards(self.tempcards)
+		elif pressdeck == self.COLUMNDECK:
+			self.columndecks[pressindex].addCards(self.tempcards)
+		elif pressdeck == self.SUITDECK:
+			self.suitdecks[pressindex].addCards(self.tempcards)
+		else:
+			if self.tempcards[0].getNum() == 1 and len(self.tempcards) == 1 and 'suit' in tag:
+				self.suitdecks[pressindex].addCards(self.tempcards)
+			elif self.tempcards[0].getNum() == 13 and 'column' in tag:
+				self.columndecks[pressindex].addCards(self.tempcards)
+		self.highlighttags = self.tempcards = []
+		self.isCardMove = self.isDoubleClicked = False
+		self.repaint()
+		if self.gameComplete() == True:
+			messagebox.showinfo('メッセージ', '成功です。')
 
 	def getCardsInfosWithTags(self, tag):
 		cards = []
