@@ -187,41 +187,31 @@ class Game(tk.Frame):
 		if self.tempcards[0].getNum() == 1 and len(self.tempcards) == 1 and 'suit' in tag:
 			goal = self.canvas.coords(tag)
 			goal[0] += self.suitdecks[0].getPadding()
+			goal[1] += self.suitdecks[0].getPadding()
 		elif self.tempcards[0].getNum() == 13 and 'column' in tag:
 			goal = self.canvas.coords(tag)
 		else:
 			goal = self.canvas.coords(tempcards[0].getTags())
+			goal[1] += self.columndecks[0].getShiftX()
 		if self.isDoubleClicked == True:
 			start = self.canvas.coords(tempcards[0].getTags())
 			if len(self.suitdecks[pressindex].getCards()) > 0:
 				goal = self.canvas.coords(self.suitdecks[pressindex].getCards()[-1].getTags())
 			else:
 				goal = self.canvas.coords('suit' + str(pressindex))
-				if self.pressdeck == self.COLUMNDECK:
-					goal[1] -= self.suitdecks[0].getPadding() * 2
-				elif self.pressdeck == self.BLANK:
-					goal[0] -= self.suitdecks[0].getPadding()
-					goal[1] -= self.suitdecks[0].getPadding()
+				goal[0] += self.suitdecks[0].getPadding()
+				goal[1] += self.suitdecks[0].getPadding()
 		mx = (goal[0] - start[0]) / splitcount
 		my = (goal[1] - start[1]) / splitcount
-		if pressdeck == self.COLUMNDECK:
-			my += self.columndecks[0].getShiftX() / splitcount
-		elif pressdeck == self.SUITDECK or 'suit' in tag:
-			my += self.suitdecks[0].getPadding() / splitcount
-		if self.isDoubleClicked == True and len(self.suitdecks[pressindex].getCards()) == 0:
-			mx += self.suitdecks[0].getPadding() / splitcount
-			my += self.suitdecks[0].getPadding() / splitcount
 		for i in range(splitcount):
 			for j in range(len(self.tempcards)):
 				self.canvas.move(self.tempcards[j].getTags(), mx, my)
 			time.sleep(0.05)
 
-		if self.isDoubleClicked == True:
+		if self.isDoubleClicked == True or pressdeck == self.SUITDECK:
 			self.suitdecks[pressindex].addCards(self.tempcards)
 		elif pressdeck == self.COLUMNDECK:
 			self.columndecks[pressindex].addCards(self.tempcards)
-		elif pressdeck == self.SUITDECK:
-			self.suitdecks[pressindex].addCards(self.tempcards)
 		else:
 			if self.tempcards[0].getNum() == 1 and len(self.tempcards) == 1 and 'suit' in tag:
 				self.suitdecks[pressindex].addCards(self.tempcards)
