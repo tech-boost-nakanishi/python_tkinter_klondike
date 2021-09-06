@@ -21,8 +21,7 @@ class Game(tk.Frame):
 
 		self.highlighttags = []	# 選択中のタグを格納
 		self.tempcards = []		# 選択中のカードを格納
-		self.isCardMove = False
-		self.isDoubleClicked = False
+		self.isCardMove = self.isDoubleClicked = False
 
 		# 52枚のカードを生成
 		import deck
@@ -229,9 +228,7 @@ class Game(tk.Frame):
 		for i in range(len(self.columndecks)):
 			for j in range(len(self.columndecks[i].getCards())):
 				if self.columndecks[i].getCards()[j].getTags() == tag:
-					while j < len(self.columndecks[i].getCards()):
-						cards.append(self.columndecks[i].getCards()[j])
-						j += 1
+					cards = self.columndecks[i].getCards()[j:]
 					return cards, i, self.COLUMNDECK
 
 		# スーツデッキを検索
